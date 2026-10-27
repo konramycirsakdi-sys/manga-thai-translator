@@ -1,35 +1,47 @@
-
 name: Build Android APK
 
 on:
   workflow_dispatch:
   push:
+    paths:
+      - 'MangaThaiTranslatorProject.zip'
+      - '.github/workflows/build-apk.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - uses: subosito/flutter-action@v2
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
         with:
           channel: stable
+
+      - name: Check ZIP
+        run: |
+          ls -la
+          test -f MangaThaiTranslatorProject.zip
 
       - name: Extract project
         run: |
           mkdir app
           unzip MangaThaiTranslatorProject.zip -d app
+          test -f app/pubspec.yaml
+          test -f app/lib/main.dart
 
-      - name: Prepare Android
+      - name: Generate Android files
         working-directory: app
         run: flutter create --platforms=android .
 
-      - name: Install dependencies
+      - name: Get dependencies
         working-directory: app
         run: flutter pub get
 
@@ -37,8 +49,9 @@ jobs:
         working-directory: app
         run: flutter build apk --release
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        if: success()
+        uses: actions/upload-artifact@v4
         with:
           name: manga-thai-translator-apk
           path: app/build/app/outputs/flutter-apk/app-release.apk
-          
